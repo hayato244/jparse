@@ -11,7 +11,7 @@ static void internal_fill(FILE *fp, reader_t *reader)
         {
             break;
         }
-    
+
         reader->buffer[reader->head] = *ch;
         reader->head = (reader->head + 1) % READER_BUFFER_SIZE;
         reader->count++;
@@ -31,7 +31,7 @@ char reader_peek(FILE *fp, reader_t *reader)
 char reader_next(FILE *fp, reader_t *reader)
 {
     internal_fill(fp, reader);
-    
+
     char ch = reader->buffer[reader->tail];
     reader->tail = (reader->tail + 1) % READER_BUFFER_SIZE;
     reader->count--;

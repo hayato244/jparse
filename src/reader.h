@@ -8,7 +8,8 @@
 
 #define READER_BUFFER_SIZE 5
 
-typedef struct {
+typedef struct
+{
     char buffer[READER_BUFFER_SIZE];
     uint32_t head;
     uint32_t tail;

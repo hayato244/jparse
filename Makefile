@@ -5,7 +5,7 @@ BINDIR = bin
 OBJDIR = obj
 SRCDIR = src
 
-_OBJ = main.o reader.o arena.o
+_OBJ = main.o reader.o arena.o helper.o
 OBJ = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
 
 _BIN = main

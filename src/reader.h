@@ -10,14 +10,17 @@
 
 typedef struct
 {
+    FILE *fp;
     char buffer[READER_BUFFER_SIZE];
     uint32_t head;
     uint32_t tail;
     uint32_t count;
 } reader_t;
 
-char reader_peek(FILE *fp, reader_t *reader);
+char reader_peek(reader_t *reader);
 
-char reader_next(FILE *fp, reader_t *reader);
+char reader_peekn(reader_t *reader, int32_t n);
+
+char reader_next(reader_t *reader);
 
 #endif

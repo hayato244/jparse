@@ -1,36 +1,53 @@
+#include <assert.h>
+
 #include "arena.h"
 #include "reader.h"
 
-static void internal_fill(FILE *fp, reader_t *reader)
+static void fill(reader_t *reader)
 {
-    char ch[1];
+    char ch;
 
-    while (fread(ch, sizeof(char), 1, fp))
+    while ((ch = fgetc(reader->fp)))
     {
+        reader->buffer[reader->head] = ch;
+        reader->head = (reader->head + 1) % READER_BUFFER_SIZE;
+        reader->count++;
+        
         if (reader->count == READER_BUFFER_SIZE)
         {
             break;
         }
-
-        reader->buffer[reader->head] = *ch;
-        reader->head = (reader->head + 1) % READER_BUFFER_SIZE;
-        reader->count++;
     }
 }
 
-char reader_peek(FILE *fp, reader_t *reader)
+char reader_peek(reader_t *reader)
 {
     if (reader->count == 0)
     {
-        internal_fill(fp, reader);
+        fill(reader);
     }
 
     return reader->buffer[reader->tail];
 }
 
-char reader_next(FILE *fp, reader_t *reader)
+char reader_peekn(reader_t *reader, int32_t n)
 {
-    internal_fill(fp, reader);
+    assert(n < READER_BUFFER_SIZE);
+    
+    if (reader->count == 0)
+    {
+        fill(reader);
+    }
+
+    return reader->buffer[reader->tail + n];
+}
+
+char reader_next(reader_t *reader)
+{
+    if (reader->count < READER_BUFFER_SIZE)
+    {
+        fill(reader);
+    }
 
     char ch = reader->buffer[reader->tail];
     reader->tail = (reader->tail + 1) % READER_BUFFER_SIZE;

@@ -55,6 +55,26 @@ void append_token(token_stream_t *token_stream, token_t *token)
     token_stream->count++;
 }
 
+json_token determine_keyword(char *word)
+{
+    if (strncmp(word, "true", MAX_KEYWORD_LENGTH) == 0)
+    {
+        return JSON_TRUE;
+    }
+
+    if (strncmp(word, "false", MAX_KEYWORD_LENGTH) == 0)
+    {
+        return JSON_FALSE;
+    }
+
+    if (strncmp(word, "null", MAX_KEYWORD_LENGTH) == 0)
+    {
+        return JSON_NULL;
+    }
+
+    return JSON_NONE;
+}
+
 void create_syntax_token(token_stream_t *token_stream, token_t *token, reader_t *reader)
 {
     char next_char = reader_next(reader);

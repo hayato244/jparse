@@ -187,10 +187,8 @@ void create_keyword_token(token_stream_t *token_stream, token_t *token, reader_t
 
 int main(int argc, char *argv[])
 {
-    reader_t reader;
+    reader_t reader = {0};
     const char *path = argv[1];
-    
-    memset(&reader, 0, sizeof(reader_t));
     
     if (argc != 2)
     {

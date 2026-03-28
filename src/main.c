@@ -117,6 +117,8 @@ void create_string_token(token_stream_t *token_stream, token_t *token, reader_t 
             literal = (char *)arena_alloc(arena, sizeof(char));
         }
     }
+
+    reader_next(reader); // Consume second double quote
     
     token->value = literal;
     append_token(token_stream, token);

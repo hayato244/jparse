@@ -124,6 +124,36 @@ void create_string_token(token_stream_t *token_stream, token_t *token, reader_t 
     append_token(token_stream, token);
 }
 
+void create_numeric_token(token_stream_t *token_stream, token_t *token, reader_t *reader, arena_t *arena)
+{
+    uint32_t read_chars = 0;
+    char *literal = (char *)arena_alloc(arena, sizeof(char));
+
+    token->token_type = LITERAL_TOKEN;
+    token->json_token = JSON_NUMBER;
+
+    // TODO: If string is exactly 16 chars long, no null char will be at the end
+
+    while (is_numeric(reader_peek(reader)))
+    {
+        char next_char = reader_next(reader);
+        char *p = literal + read_chars;
+
+        *p = next_char;
+        read_chars++;
+
+        // Allocate new space for proper alignment
+        if (read_chars % DEFAULT_ALIGNMENT == 0)
+        {
+            read_chars = 0;
+            literal = (char *)arena_alloc(arena, sizeof(char));
+        }
+    }
+
+    token->value = literal;
+    append_token(token_stream, token);
+}
+
 int main(int argc, char *argv[])
 {
     reader_t reader;

@@ -120,6 +120,7 @@ void create_string_token(token_stream_t *token_stream, token_t *token, reader_t 
     char *literal = (char *)arena_alloc(arena, sizeof(char));
 
     token->token_type = LITERAL_TOKEN;
+    token->json_token = JSON_STRING;
 
     // TODO: If string is exactly 16 chars long, no null char will be added to the end
 

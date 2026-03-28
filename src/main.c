@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
     }
 
     arena_t *token_arena = arena_init(sizeof(token_t) * 512);
-    arena_t *literal_arena = arena_init(MiB);
+    arena_t *value_arena = arena_init(MiB);
 
     token_stream_t token_stream;
     token_stream.tokens = (token_t *)ARENA_ALLOC_ARRAY(token_arena, 512, token_t);
@@ -246,7 +246,13 @@ int main(int argc, char *argv[])
 
         if (is_numeric(peeked_char))
         {
-            // TODO: handle_numeric_token
+            create_numeric_token(&token_stream, &token, &reader, value_arena);
+            continue;
+        }
+
+        if (is_alpha(peeked_char))
+        {
+            create_keyword_token(&token_stream, &token, &reader, value_arena);
         }
 
         switch (peeked_char)
@@ -257,18 +263,19 @@ int main(int argc, char *argv[])
             case ']':
             case ',':
             case ':':
-            case '"':
                 create_syntax_token(&token_stream, &token, &reader);
+                break;
+
+            case '"':
+                create_string_token(&token_stream, &token, &reader, value_arena);
                 break;
             
             case EOF:
                 token.token_type = EOF_TOKEN;
-                goto end;
+                token.json_token = JSON_NONE;
+                append_token(&token_stream, &token);
 
-            default:
-                // TODO: Temporary to prevent infinite loop
-                reader_next(&reader);
-                break;
+                goto end;
         }
     }
 

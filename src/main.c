@@ -18,6 +18,7 @@ typedef enum {
 } token_type;
 
 typedef enum {
+    JSON_NONE, // Basically EOF
     JSON_LEFT_BRACE,
     JSON_RIGHT_BRACE,
     JSON_LEFT_BRACKET,
@@ -28,6 +29,8 @@ typedef enum {
     JSON_TRUE,
     JSON_FALSE,
     JSON_NULL,
+    JSON_STRING,
+    JSON_NUMBER,
 } json_token;
 
 typedef struct {

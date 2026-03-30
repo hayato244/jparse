@@ -254,6 +254,7 @@ int main(int argc, char *argv[])
         if (is_alpha(peeked_char))
         {
             create_keyword_token(&token_stream, &token, &reader, value_arena);
+            continue;
         }
 
         switch (peeked_char)

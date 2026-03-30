@@ -17,6 +17,8 @@ typedef struct
     uint32_t count;
 } reader_t;
 
+bool reader_init(reader_t *reader, const char *path);
+
 char reader_peek(reader_t *reader);
 
 char reader_peekn(reader_t *reader, int32_t n);

@@ -220,9 +220,9 @@ int main(int argc, char *argv[])
         return 1;
     }
     
-    if ((reader.fp = fopen(path, "r")) == NULL)
+    if (!reader_init(&reader, path))
     {
-        perror("fopen");
+        perror("reader_init");
         return 1;
     }
 

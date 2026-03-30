@@ -226,6 +226,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    printf("-- Begin lexing %s --\n\n", path);
+
     arena_t *token_arena = arena_init(sizeof(token_t) * 512);
     arena_t *value_arena = arena_init(MiB);
 
@@ -235,6 +237,7 @@ int main(int argc, char *argv[])
     for (;;)
     {
         char peeked_char = reader_peek(&reader);
+        char org_char = peeked_char;
 
         token_t token;
         token.value = NULL;
@@ -248,12 +251,16 @@ int main(int argc, char *argv[])
         if (is_numeric(peeked_char))
         {
             create_numeric_token(&token_stream, &token, &reader, value_arena);
+            printf("[TOKEN] Type: LITERAL  | %s\n", token.value);
+
             continue;
         }
 
         if (is_alpha(peeked_char))
         {
             create_keyword_token(&token_stream, &token, &reader, value_arena);
+            printf("[TOKEN] Type: KEYWORD  | %s\n", token.value);
+
             continue;
         }
 
@@ -266,10 +273,13 @@ int main(int argc, char *argv[])
             case ',':
             case ':':
                 create_syntax_token(&token_stream, &token, &reader);
+                printf("[TOKEN] Type: SYNTAX   | %c\n", org_char);
+
                 break;
 
             case '"':
                 create_string_token(&token_stream, &token, &reader, value_arena);
+                printf("[TOKEN] Type: LITERAL  | %s\n", token.value);
                 break;
             
             case EOF:
@@ -282,5 +292,7 @@ int main(int argc, char *argv[])
     }
 
 end:
+    printf("\nCreated a total of %u tokens\n", token_stream.count);
+    printf("\n-- Finished lexing %s --\n", path);
     return 0;
 }

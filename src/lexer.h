@@ -1,4 +1,9 @@
+#ifndef LEXER_H
+#define LEXER_H
+
 #include <stdint.h>
+
+#define TOKEN_BUFFER_SIZE 2
 
 #include "arena.h"
 #include "reader.h"
@@ -11,23 +16,23 @@ typedef enum {
 } token_type;
 
 typedef enum {
-    JSON_NONE, // Basically EOF
-    JSON_LEFT_BRACE,
-    JSON_RIGHT_BRACE,
-    JSON_LEFT_BRACKET,
-    JSON_RIGHT_BRACKET,
-    JSON_DOUBLE_QUOTE,
-    JSON_COLON,
-    JSON_COMMA,
-    JSON_TRUE,
-    JSON_FALSE,
-    JSON_NULL,
-    JSON_STRING,
-    JSON_NUMBER,
+    JSON_NONE_TOKEN, // Basically EOF
+    JSON_LEFT_BRACE_TOKEN,
+    JSON_RIGHT_BRACE_TOKEN,
+    JSON_LEFT_BRACKET_TOKEN,
+    JSON_RIGHT_BRACKET_TOKEN,
+    JSON_DOUBLE_QUOTE_TOKEN,
+    JSON_COLON_TOKEN,
+    JSON_COMMA_TOKEN,
+    JSON_TRUE_TOKEN,
+    JSON_FALSE_TOKEN,
+    JSON_NULL_TOKEN,
+    JSON_STRING_TOKEN,
+    JSON_NUMBER_TOKEN,
 } json_token;
 
 typedef struct {
-    token_type token_type;
+    token_type type;
     json_token json_token;
     char *value;
 } token_t;
@@ -37,12 +42,20 @@ typedef struct {
     token_t *tokens;
 } token_stream_t;
 
-void create_syntax_token(token_stream_t *token_stream, token_t *token, reader_t *reader);
+typedef struct {
+    reader_t *reader;
+    token_t token_buffer[TOKEN_BUFFER_SIZE];
+    uint32_t token_buffer_head;
+    uint32_t token_buffer_tail;
+    uint32_t token_buffer_count;
+    char *token_values;
+    uint32_t token_values_offset;
+} lexer_t;
 
-void create_string_token(token_stream_t *token_stream, token_t *token, reader_t *reader, arena_t *arena);
+lexer_t lexer_init(reader_t *reader, arena_t *arena);
 
-void create_numeric_token(token_stream_t *token_stream, token_t *token, reader_t *reader, arena_t *arena);
+void lexer_peek(lexer_t *lexer, token_t *token);
 
-void create_keyword_token(token_stream_t *token_stream, token_t *token, reader_t *reader, arena_t *arena);
+void lexer_next(lexer_t *lexer, token_t *token);
 
-void create_eof_token(token_stream_t *token_stream, token_t *token);
+#endif

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "arena.h"
 #include "reader.h"
@@ -22,15 +23,17 @@ static void fill(reader_t *reader)
     }
 }
 
-bool reader_init(reader_t *reader, const char *path)
+reader_t reader_init(const char *path)
 {
-    if ((reader->fp = fopen(path, "r")) == NULL)
+    reader_t reader = {0};
+
+    if ((reader.fp = fopen(path, "r")) == NULL)
     {
         perror("fopen");
-        return false;
+        exit(1);
     }
 
-    return true;
+    return reader;
 }
 
 char reader_peek(reader_t *reader)

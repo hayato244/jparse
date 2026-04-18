@@ -47,7 +47,7 @@ static void *arena_alloc_aligned(arena_t *arena, size_t size, size_t alignment)
     }
 
     size_t aligned_offset = (arena->offset + alignment - 1) & ~(alignment - 1);
-    
+
     if (size + aligned_offset > arena->reserved_size)
     {
         return NULL;

@@ -1,102 +1,224 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "arena.h"
 #include "helper.h"
 #include "lexer.h"
+#include "parser.h"
 #include "reader.h"
+#include "shared.h"
 
-#define KiB (1 << 10)
-#define MiB (KiB * KiB)
-
-int main(int argc, char *argv[])
+json_ast_t *make_string_node(const token_t *token, arena_t *arena)
 {
-    reader_t reader = {0};
-    const char *path = argv[1];
-    
-    if (argc != 2)
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_STRING;
+    node->string = token->value;
+
+    return node;
+}
+
+json_ast_t *make_number_node(const token_t *token, arena_t *arena)
+{
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_NUMBER;
+
+    // TODO: Implement own number parsing function
+    node->number = strtof(token->value, NULL);
+
+    return node;
+}
+
+json_ast_t *make_boolean_node(const token_t *token, arena_t *arena)
+{
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_BOOLEAN;
+    node->boolean = token->json_token == JSON_TRUE_TOKEN ? true : false;
+
+    return node;
+}
+
+json_ast_t *make_null_node(arena_t *arena)
+{
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_NULL;
+    node->null = NULL;
+
+    return node;
+}
+
+json_ast_t *make_object_node(json_ast_t *next, arena_t *arena)
+{
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_OBJECT;
+    node->json_object.next = next;
+
+    return node;
+}
+
+json_ast_t *make_object_key_node(parser_t *parser, arena_t *arena)
+{
+    token_t token = {0};
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_OBJECT_KEY;
+
+    lexer_next(parser->lexer, &token);
+
+    // Token has to be JSON_STRING_TOKEN (see parse_json_object)
+    node->json_object_key.string = make_string_node(&token, arena);
+
+    lexer_next(parser->lexer, &token);
+
+    if (token.json_token != JSON_COLON_TOKEN)
     {
-    printf(
-        "Usage: jparse <file>\n"
-        "Parse JSON provided by <file>.\n");
-        
-        return 1;
+        printf("parse error\n");
+        return NULL;
     }
-    
-    if (!reader_init(&reader, path))
+
+    lexer_next(parser->lexer, &token);
+
+    if (token.json_token == JSON_STRING_TOKEN)
     {
-        perror("reader_init");
-        return 1;
+        node->json_object_key.value = make_string_node(&token, arena);
     }
 
-    printf("-- Begin lexing %s --\n\n", path);
+    else if (token.json_token == JSON_LEFT_BRACE_TOKEN)
+    {
+        node->json_object_key.value = parse_json_object(parser, arena);
+    }
 
-    arena_t *token_arena = arena_init(sizeof(token_t) * 512);
-    arena_t *value_arena = arena_init(MiB);
+    else if (token.json_token == JSON_LEFT_BRACKET_TOKEN)
+    {
+        node->json_object_key.value = parse_json_array(parser, arena);
+    }
 
-    token_stream_t token_stream;
-    token_stream.tokens = (token_t *)ARENA_ALLOC_ARRAY(token_arena, 512, token_t);
+    else if (token.json_token == JSON_NUMBER_TOKEN)
+    {
+        node->json_object_key.value = make_number_node(&token, arena);
+    }
+
+    else if (token.json_token == JSON_FALSE_TOKEN || token.json_token == JSON_TRUE_TOKEN)
+    {
+        node->json_object_key.value = make_boolean_node(&token, arena);
+    }
+
+    else if (token.json_token == JSON_NULL_TOKEN)
+    {
+        node->json_object_key.value = make_null_node(arena);
+    }
+
+    else
+    {
+        printf("parse error\n");
+        return NULL;
+    }
+
+    return node;
+}
+
+void append_object_key_node(parser_t *parser, json_ast_t *head, arena_t *arena)
+{
+    json_ast_t *new_node = make_object_key_node(parser, arena);
+    json_ast_t *current = head;
+
+    while (current->json_object_key.next != NULL)
+    {
+        current = current->json_object_key.next;
+    }
+
+    current->json_object_key.next = new_node;
+}
+
+json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
+{
+    token_t token = {0};
+    json_ast_t *head = NULL;
 
     for (;;)
     {
-        char peeked_char = reader_peek(&reader);
-        char org_char = peeked_char;
+        // Token consumed in make_object_key_node
+        lexer_peek(parser->lexer, &token);
 
-        token_t token;
-        token.value = NULL;
-
-        if (is_whitespace(peeked_char))
+        if (token.json_token == JSON_STRING_TOKEN)
         {
-            reader_next(&reader);
-            continue;
+            if (head != NULL)
+            {
+                append_object_key_node(parser, head, arena);
+            }
+            else
+            {
+                head = make_object_key_node(parser, arena);
+            }
         }
 
-        if (is_numeric(peeked_char))
+        lexer_next(parser->lexer, &token);
+
+        // Object is comma separated list of key values
+        if (token.json_token != JSON_COMMA_TOKEN)
         {
-            create_numeric_token(&token_stream, &token, &reader, value_arena);
-            printf("[TOKEN] Type: LITERAL  | %s\n", token.value);
-
-            continue;
-        }
-
-        if (is_alpha(peeked_char))
-        {
-            create_keyword_token(&token_stream, &token, &reader, value_arena);
-            printf("[TOKEN] Type: KEYWORD  | %s\n", token.value);
-
-            continue;
-        }
-
-        switch (peeked_char)
-        {
-            case '{':
-            case '}':
-            case '[':
-            case ']':
-            case ',':
-            case ':':
-                create_syntax_token(&token_stream, &token, &reader);
-                printf("[TOKEN] Type: SYNTAX   | %c\n", org_char);
-
-                break;
-
-            case '"':
-                create_string_token(&token_stream, &token, &reader, value_arena);
-                printf("[TOKEN] Type: LITERAL  | %s\n", token.value);
-
-                break;
-            
-            case EOF:
-                create_eof_token(&token_stream, &token);
-                goto end;
+            break;
         }
     }
 
-end:
-    printf("\nCreated a total of %u tokens\n", token_stream.count);
-    printf("\n-- Finished lexing %s --\n", path);
+    if (token.json_token != JSON_RIGHT_BRACE_TOKEN)
+    {
+        printf("parse error\n");
+        return NULL;
+    }
+
+    return make_object_node(head, arena);
+}
+
+json_ast_t *parse_json_array(parser_t *parser, arena_t *arena)
+{
+    // TODO: Implement array parsing
+
+    return NULL;
+}
+
+json_ast_t *parse_json(parser_t *parser, arena_t *arena)
+{
+    token_t token = {0};
+    json_ast_t *json_ast = NULL;
+
+    lexer_next(parser->lexer, &token);
+
+    if (token.json_token == JSON_LEFT_BRACE_TOKEN)
+    {
+        json_ast = parse_json_object(parser, arena);
+    }
+
+    return json_ast; // Returns either built AST or null
+}
+
+int main(int argc, char *argv[])
+{
+    arena_t *arena = arena_init(MiB);
+    const char *path = argv[1];
+
+    if (argc != 2)
+    {
+        printf("Usage: jparse <file>\n"
+               "Parse JSON provided by <file>.\n");
+
+        return 1;
+    }
+
+    reader_t reader = reader_init(path);
+    lexer_t lexer = lexer_init(&reader, arena);
+
+    parser_t parser = {0};
+
+    parser.lexer = &lexer;
+    json_ast_t *json = parse_json(&parser, arena);
 
     return 0;
 }

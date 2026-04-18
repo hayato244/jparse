@@ -8,8 +8,7 @@
 
 #define READER_BUFFER_SIZE 5
 
-typedef struct
-{
+typedef struct {
     FILE *fp;
     char buffer[READER_BUFFER_SIZE];
     uint32_t head;
@@ -17,7 +16,7 @@ typedef struct
     uint32_t count;
 } reader_t;
 
-bool reader_init(reader_t *reader, const char *path);
+reader_t reader_init(const char *path);
 
 char reader_peek(reader_t *reader);
 

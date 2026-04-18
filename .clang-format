@@ -1,0 +1,29 @@
+TabWidth: 4
+
+IndentWidth: 4
+
+AlignTrailingComments: true
+
+AllowShortBlocksOnASingleLine: false
+
+AllowShortCaseLabelsOnASingleLine: false
+
+AllowShortFunctionsOnASingleLine: false
+
+AllowShortIfStatementsOnASingleLine: true
+
+AllowShortLoopsOnASingleLine: false
+
+IndentCaseLabels: true
+
+BreakBeforeBraces: Custom
+
+BraceWrapping:
+  AfterControlStatement: true
+  AfterEnum: false
+  AfterFunction: true
+  AfterStruct: false
+  AfterUnion: false
+  BeforeElse: true
+
+ColumnLimit: 0

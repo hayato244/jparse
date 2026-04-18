@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "arena.h"
+#include "../include/arena.h"
 
 arena_t *arena_init(size_t size)
 {

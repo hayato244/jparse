@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "arena.h"
-#include "helper.h"
-#include "lexer.h"
-#include "parser.h"
-#include "reader.h"
-#include "shared.h"
+#include "../include/arena.h"
+#include "../include/helper.h"
+#include "../include/lexer.h"
+#include "../include/parser.h"
+#include "../include/reader.h"
+#include "../include/shared.h"
 
 json_ast_t *make_string_node(const token_t *token, arena_t *arena)
 {

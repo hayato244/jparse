@@ -5,8 +5,8 @@
 
 #define TOKEN_BUFFER_SIZE 2
 
-#include "arena.h"
-#include "reader.h"
+#include "../include/arena.h"
+#include "../include/reader.h"
 
 typedef enum {
     KEYWORD_TOKEN,

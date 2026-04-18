@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "arena.h"
+#include "../include/arena.h"
 
 #define READER_BUFFER_SIZE 5
 

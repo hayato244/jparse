@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "helper.h"
-#include "lexer.h"
-#include "shared.h"
+#include "../include/helper.h"
+#include "../include/lexer.h"
+#include "../include/shared.h"
 
 #define MAX_KEYWORD_LENGTH 5
 

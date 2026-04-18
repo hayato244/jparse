@@ -1,8 +1,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "arena.h"
-#include "lexer.h"
+#include "../include/arena.h"
+#include "../include/lexer.h"
 
 typedef enum {
     JSON_OBJECT,

@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "helper.h"
+#include "../include/helper.h"
 
 bool is_whitespace(char c)
 {

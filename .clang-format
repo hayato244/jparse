@@ -6,7 +6,7 @@ AlignTrailingComments: true
 
 AllowShortBlocksOnASingleLine: false
 
-AllowShortCaseLabelsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
 
 AllowShortFunctionsOnASingleLine: false
 

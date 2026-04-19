@@ -11,9 +11,13 @@
 typedef struct {
     FILE *fp;
     char buffer[READER_BUFFER_SIZE];
+
     uint32_t head;
     uint32_t tail;
     uint32_t count;
+
+    uint32_t line;
+    uint32_t column;
 } reader_t;
 
 reader_t reader_init(const char *path);

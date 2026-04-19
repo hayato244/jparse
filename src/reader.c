@@ -16,6 +16,14 @@ static void fill(reader_t *reader)
         reader->head = (reader->head + 1) % READER_BUFFER_SIZE;
         reader->count++;
 
+        reader->column++;
+
+        if (ch == '\n')
+        {
+            reader->line++;
+            reader->column = 1;
+        }
+
         if (reader->count == READER_BUFFER_SIZE)
         {
             break;
@@ -26,6 +34,9 @@ static void fill(reader_t *reader)
 reader_t reader_init(const char *path)
 {
     reader_t reader = {0};
+
+    reader.line = 1;
+    reader.column = 1;
 
     if ((reader.fp = fopen(path, "r")) == NULL)
     {

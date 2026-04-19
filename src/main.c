@@ -78,31 +78,6 @@ json_ast_t *make_value_node(parser_t *parser, arena_t *arena)
     return NULL;
 }
 
-json_ast_t *make_object_key_node(parser_t *parser, arena_t *arena)
-{
-    token_t token = {0};
-    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
-
-    node->tag = JSON_OBJECT_KEY;
-
-    lexer_next(parser->lexer, &token);
-
-    // Token has to be JSON_STRING_TOKEN (see parse_json_object)
-    node->json_object_key.string = make_string_node(&token, arena);
-
-    lexer_next(parser->lexer, &token);
-
-    if (token.json_token != JSON_COLON_TOKEN)
-    {
-        printf("parse error\n");
-        return NULL;
-    }
-
-    node->json_object_key.value = make_value_node(parser, arena);
-
-    return node;
-}
-
 json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
 {
     token_t token = {0};
@@ -110,14 +85,29 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
 
     for (;;)
     {
-        // Token consumed in make_object_key_node
         lexer_peek(parser->lexer, &token);
 
         if (token.json_token == JSON_STRING_TOKEN)
         {
+            json_ast_t *new_node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+            new_node->tag = JSON_OBJECT_KEY;
+
+            lexer_next(parser->lexer, &token);
+
+            new_node->json_object_key.string = make_string_node(&token, arena);
+
+            lexer_next(parser->lexer, &token);
+
+            if (token.json_token != JSON_COLON_TOKEN)
+            {
+                return NULL;
+            }
+
+            new_node->json_object_key.value = make_value_node(parser, arena);
+
             if (head != NULL)
             {
-                json_ast_t *new_node = make_object_key_node(parser, arena);
                 json_ast_t *current = head;
 
                 while (current->json_object_key.next != NULL)
@@ -129,7 +119,7 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
             }
             else
             {
-                head = make_object_key_node(parser, arena);
+                head = new_node;
             }
         }
 

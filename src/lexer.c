@@ -8,19 +8,27 @@
 
 #define MAX_KEYWORD_LENGTH 5
 
-static bool string_compare(char c)
+static bool continue_string(reader_t *reader)
 {
-    return c != '"';
+    char c = reader_peek(reader);
+    char prev_char = reader_peekn(reader, -1);
+
+    if (c == '"')
+    {
+        return prev_char == '\\';
+    }
+
+    return true;
 }
 
-static bool numeric_compare(char c)
+static bool continue_number(reader_t *reader)
 {
-    return is_numeric(c);
+    return is_numeric(reader_peek(reader));
 }
 
-static bool keyword_compare(char c)
+static bool continue_keyword(reader_t *reader)
 {
-    return is_alpha(c);
+    return is_alpha(reader_peek(reader));
 }
 
 static json_token determine_keyword(char *word)
@@ -43,12 +51,12 @@ static json_token determine_keyword(char *word)
     return JSON_NONE_TOKEN;
 }
 
-static void token_value(lexer_t *lexer, token_t *token, bool (*compare)(char))
+static void token_value(lexer_t *lexer, token_t *token, bool (*cont)(reader_t *))
 {
     uint32_t read_chars = 0;
     token->value = lexer->token_values + lexer->token_values_offset;
 
-    while (compare(reader_peek(lexer->reader)))
+    while (cont(lexer->reader))
     {
         char next_char = reader_next(lexer->reader);
 
@@ -100,7 +108,6 @@ static void syntax_token(lexer_t *lexer, token_t *token)
     printf("Type: SYNTAX   | %c\n", next_char);
 }
 
-// TODO: Enable escaped double quote character in string
 static void string_token(lexer_t *lexer, token_t *token)
 {
     reader_next(lexer->reader); // Consume first double quote
@@ -108,7 +115,7 @@ static void string_token(lexer_t *lexer, token_t *token)
     token->type = LITERAL_TOKEN;
     token->json_token = JSON_STRING_TOKEN;
 
-    token_value(lexer, token, string_compare);
+    token_value(lexer, token, continue_string);
 
     reader_next(lexer->reader); // Consume second double quote
 
@@ -120,7 +127,7 @@ static void numeric_token(lexer_t *lexer, token_t *token)
     token->type = LITERAL_TOKEN;
     token->json_token = JSON_NUMBER_TOKEN;
 
-    token_value(lexer, token, numeric_compare);
+    token_value(lexer, token, continue_number);
 
     printf("Type: LITERAL  | %s\n", token->value);
 }
@@ -129,7 +136,7 @@ static void keyword_token(lexer_t *lexer, token_t *token)
 {
     token->type = KEYWORD_TOKEN;
 
-    token_value(lexer, token, keyword_compare);
+    token_value(lexer, token, continue_keyword);
 
     token->json_token = determine_keyword(token->value);
 

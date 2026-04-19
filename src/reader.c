@@ -49,13 +49,17 @@ char reader_peek(reader_t *reader)
 char reader_peekn(reader_t *reader, int32_t n)
 {
     assert(n < READER_BUFFER_SIZE);
+    assert(n > -2); // Allows looking at the previous character
 
     if (reader->count == 0)
     {
         fill(reader);
     }
 
-    return reader->buffer[reader->tail + n];
+    int tail = reader->tail;
+    int lookup = (tail + n);
+
+    return reader->buffer[lookup < 0 ? READER_BUFFER_SIZE - 1 : lookup];
 }
 
 char reader_next(reader_t *reader)

@@ -17,19 +17,24 @@ typedef enum {
 typedef struct json_ast {
     json_tag tag;
     union {
-        struct json_object {
+        struct {
             struct json_ast *next;
         } json_object;
 
-        struct json_object_key {
+        struct {
             struct json_ast *string;
             struct json_ast *value;
             struct json_ast *next;
         } json_object_key;
 
-        struct json_array {
+        struct {
             struct json_ast *next;
         } json_array;
+
+        struct {
+            struct json_ast *value;
+            struct json_ast *next;
+        } json_array_value;
 
         char *string;
         float number;

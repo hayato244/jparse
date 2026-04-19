@@ -21,46 +21,61 @@ json_ast_t *make_string_node(const token_t *token, arena_t *arena)
     return node;
 }
 
-json_ast_t *make_number_node(const token_t *token, arena_t *arena)
+json_ast_t *make_value_node(parser_t *parser, arena_t *arena)
 {
-    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+    token_t token = {0};
+    lexer_next(parser->lexer, &token);
 
-    node->tag = JSON_NUMBER;
+    if (token.json_token == JSON_STRING_TOKEN)
+    {
+        return make_string_node(&token, arena);
+    }
 
-    // TODO: Implement own number parsing function
-    node->number = strtof(token->value, NULL);
+    if (token.json_token == JSON_LEFT_BRACE_TOKEN)
+    {
+        return parse_json_object(parser, arena);
+    }
 
-    return node;
-}
+    if (token.json_token == JSON_LEFT_BRACKET_TOKEN)
+    {
+        return parse_json_array(parser, arena);
+    }
 
-json_ast_t *make_boolean_node(const token_t *token, arena_t *arena)
-{
-    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+    if (token.json_token == JSON_NUMBER_TOKEN)
+    {
+        json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
 
-    node->tag = JSON_BOOLEAN;
-    node->boolean = token->json_token == JSON_TRUE_TOKEN ? true : false;
+        node->tag = JSON_NUMBER;
 
-    return node;
-}
+        // TODO: Implement own number parsing function
+        node->number = strtof(token.value, NULL);
 
-json_ast_t *make_null_node(arena_t *arena)
-{
-    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+        return node;
+    }
 
-    node->tag = JSON_NULL;
-    node->null = NULL;
+    if (token.json_token == JSON_FALSE_TOKEN || token.json_token == JSON_TRUE_TOKEN)
+    {
+        json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
 
-    return node;
-}
+        node->tag = JSON_BOOLEAN;
+        node->boolean = token.json_token == JSON_TRUE_TOKEN ? true : false;
 
-json_ast_t *make_object_node(json_ast_t *next, arena_t *arena)
-{
-    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+        return node;
+    }
 
-    node->tag = JSON_OBJECT;
-    node->json_object.next = next;
+    if (token.json_token == JSON_NULL_TOKEN)
+    {
+        json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
 
-    return node;
+        node->tag = JSON_NULL;
+        node->null = NULL;
+
+        return node;
+    }
+
+    printf("parse error (make_value_node)\n");
+
+    return NULL;
 }
 
 json_ast_t *make_object_key_node(parser_t *parser, arena_t *arena)
@@ -83,58 +98,9 @@ json_ast_t *make_object_key_node(parser_t *parser, arena_t *arena)
         return NULL;
     }
 
-    lexer_next(parser->lexer, &token);
-
-    if (token.json_token == JSON_STRING_TOKEN)
-    {
-        node->json_object_key.value = make_string_node(&token, arena);
-    }
-
-    else if (token.json_token == JSON_LEFT_BRACE_TOKEN)
-    {
-        node->json_object_key.value = parse_json_object(parser, arena);
-    }
-
-    else if (token.json_token == JSON_LEFT_BRACKET_TOKEN)
-    {
-        node->json_object_key.value = parse_json_array(parser, arena);
-    }
-
-    else if (token.json_token == JSON_NUMBER_TOKEN)
-    {
-        node->json_object_key.value = make_number_node(&token, arena);
-    }
-
-    else if (token.json_token == JSON_FALSE_TOKEN || token.json_token == JSON_TRUE_TOKEN)
-    {
-        node->json_object_key.value = make_boolean_node(&token, arena);
-    }
-
-    else if (token.json_token == JSON_NULL_TOKEN)
-    {
-        node->json_object_key.value = make_null_node(arena);
-    }
-
-    else
-    {
-        printf("parse error\n");
-        return NULL;
-    }
+    node->json_object_key.value = make_value_node(parser, arena);
 
     return node;
-}
-
-void append_object_key_node(parser_t *parser, json_ast_t *head, arena_t *arena)
-{
-    json_ast_t *new_node = make_object_key_node(parser, arena);
-    json_ast_t *current = head;
-
-    while (current->json_object_key.next != NULL)
-    {
-        current = current->json_object_key.next;
-    }
-
-    current->json_object_key.next = new_node;
 }
 
 json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
@@ -151,7 +117,15 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
         {
             if (head != NULL)
             {
-                append_object_key_node(parser, head, arena);
+                json_ast_t *new_node = make_object_key_node(parser, arena);
+                json_ast_t *current = head;
+
+                while (current->json_object_key.next != NULL)
+                {
+                    current = current->json_object_key.next;
+                }
+
+                current->json_object_key.next = new_node;
             }
             else
             {
@@ -174,7 +148,12 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
         return NULL;
     }
 
-    return make_object_node(head, arena);
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_OBJECT;
+    node->json_object.next = head;
+
+    return node;
 }
 
 json_ast_t *parse_json_array(parser_t *parser, arena_t *arena)

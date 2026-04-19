@@ -97,7 +97,7 @@ static void syntax_token(lexer_t *lexer, token_t *token)
             break;
     }
 
-    printf("[TOKEN] Type: SYNTAX   | %c\n", next_char);
+    printf("Type: SYNTAX   | %c\n", next_char);
 }
 
 // TODO: Enable escaped double quote character in string
@@ -112,7 +112,7 @@ static void string_token(lexer_t *lexer, token_t *token)
 
     reader_next(lexer->reader); // Consume second double quote
 
-    printf("[TOKEN] Type: LITERAL  | %s\n", token->value);
+    printf("Type: LITERAL  | %s\n", token->value);
 }
 
 static void numeric_token(lexer_t *lexer, token_t *token)
@@ -122,7 +122,7 @@ static void numeric_token(lexer_t *lexer, token_t *token)
 
     token_value(lexer, token, numeric_compare);
 
-    printf("[TOKEN] Type: LITERAL  | %s\n", token->value);
+    printf("Type: LITERAL  | %s\n", token->value);
 }
 
 static void keyword_token(lexer_t *lexer, token_t *token)
@@ -133,7 +133,7 @@ static void keyword_token(lexer_t *lexer, token_t *token)
 
     token->json_token = determine_keyword(token->value);
 
-    printf("[TOKEN] Type: KEYWORD  | %s\n", token->value);
+    printf("Type: KEYWORD  | %s\n", token->value);
 }
 
 static void eof_token(token_t *token)

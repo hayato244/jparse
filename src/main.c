@@ -158,9 +158,51 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
 
 json_ast_t *parse_json_array(parser_t *parser, arena_t *arena)
 {
-    // TODO: Implement array parsing
+    token_t token = {0};
+    json_ast_t *head = NULL;
 
-    return NULL;
+    for (;;)
+    {
+        if (head != NULL)
+        {
+            json_ast_t *new_node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+            json_ast_t *current = head;
+
+            while (current->json_array_value.next != NULL)
+            {
+                current = current->json_array_value.next;
+            }
+
+            new_node->json_array_value.value = make_value_node(parser, arena);
+            current->json_array_value.next = new_node;
+        }
+        else
+        {
+            head = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+            head->json_array_value.value = make_value_node(parser, arena);
+        }
+
+        lexer_next(parser->lexer, &token);
+
+        // Array is comma separated list of values
+        if (token.json_token != JSON_COMMA_TOKEN)
+        {
+            break;
+        }
+    }
+
+    if (token.json_token != JSON_RIGHT_BRACKET_TOKEN)
+    {
+        printf("parse error (parse_json_array)\n");
+        return NULL;
+    }
+
+    json_ast_t *node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
+
+    node->tag = JSON_ARRAY;
+    node->json_array.next = head;
+
+    return node;
 }
 
 json_ast_t *parse_json(parser_t *parser, arena_t *arena)

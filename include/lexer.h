@@ -38,16 +38,13 @@ typedef struct {
 } token_t;
 
 typedef struct {
-    uint32_t count;
-    token_t *tokens;
-} token_stream_t;
-
-typedef struct {
     reader_t *reader;
+
     token_t token_buffer[TOKEN_BUFFER_SIZE];
     uint32_t token_buffer_head;
     uint32_t token_buffer_tail;
     uint32_t token_buffer_count;
+
     char *token_values;
     uint32_t token_values_offset;
 } lexer_t;

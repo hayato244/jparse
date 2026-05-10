@@ -73,8 +73,6 @@ json_ast_t *make_value_node(parser_t *parser, arena_t *arena)
         return node;
     }
 
-    printf("parse error (make_value_node)\n");
-
     return NULL;
 }
 
@@ -85,16 +83,18 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
 
     for (;;)
     {
-        lexer_peek(parser->lexer, &token);
+        lexer_next(parser->lexer, &token);
 
-        if (token.json_token == JSON_STRING_TOKEN)
+        if (token.json_token == JSON_RIGHT_BRACE_TOKEN)
         {
+            break;
+        }
+        else if (token.json_token == JSON_STRING_TOKEN)
+        {
+            // Build object key value node
             json_ast_t *new_node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
 
             new_node->tag = JSON_OBJECT_KEY;
-
-            lexer_next(parser->lexer, &token);
-
             new_node->json_object_key.string = make_string_node(&token, arena);
 
             lexer_next(parser->lexer, &token);
@@ -105,6 +105,11 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
             }
 
             new_node->json_object_key.value = make_value_node(parser, arena);
+
+            if (new_node->json_object_key.value == NULL)
+            {
+                return NULL;
+            }
 
             if (head != NULL)
             {
@@ -122,6 +127,10 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
                 head = new_node;
             }
         }
+        else
+        {
+            return NULL;
+        }
 
         lexer_next(parser->lexer, &token);
 
@@ -134,7 +143,6 @@ json_ast_t *parse_json_object(parser_t *parser, arena_t *arena)
 
     if (token.json_token != JSON_RIGHT_BRACE_TOKEN)
     {
-        printf("parse error\n");
         return NULL;
     }
 
@@ -153,7 +161,15 @@ json_ast_t *parse_json_array(parser_t *parser, arena_t *arena)
 
     for (;;)
     {
-        if (head != NULL)
+        // Use peek to prevent consuming token used for value node
+        lexer_peek(parser->lexer, &token);
+
+        if (token.json_token == JSON_RIGHT_BRACKET_TOKEN)
+        {
+            lexer_next(parser->lexer, &token);
+            break;
+        }
+        else if (head != NULL)
         {
             json_ast_t *new_node = (json_ast_t *)ARENA_ALLOC_STRUCT(arena, json_ast_t);
             json_ast_t *current = head;
@@ -183,7 +199,6 @@ json_ast_t *parse_json_array(parser_t *parser, arena_t *arena)
 
     if (token.json_token != JSON_RIGHT_BRACKET_TOKEN)
     {
-        printf("parse error (parse_json_array)\n");
         return NULL;
     }
 
@@ -200,11 +215,37 @@ json_ast_t *parse_json(parser_t *parser, arena_t *arena)
     token_t token = {0};
     json_ast_t *json_ast = NULL;
 
+    lexer_peek(parser->lexer, &token);
+
+    switch (token.json_token)
+    {
+        case JSON_LEFT_BRACE_TOKEN:
+            lexer_next(parser->lexer, &token);
+            json_ast = parse_json_object(parser, arena);
+            break;
+
+        case JSON_LEFT_BRACKET_TOKEN:
+            lexer_next(parser->lexer, &token);
+            json_ast = parse_json_array(parser, arena);
+            break;
+
+        case JSON_RIGHT_BRACE_TOKEN:
+        case JSON_RIGHT_BRACKET_TOKEN:
+        case JSON_COLON_TOKEN:
+        case JSON_COMMA_TOKEN:
+        case JSON_NONE_TOKEN:
+            break;
+
+        default:
+            json_ast = make_value_node(parser, arena);
+            break;
+    }
+
     lexer_next(parser->lexer, &token);
 
-    if (token.json_token == JSON_LEFT_BRACE_TOKEN)
+    if (json_ast != NULL && token.type != EOF_TOKEN)
     {
-        json_ast = parse_json_object(parser, arena);
+        return NULL;
     }
 
     return json_ast; // Returns either built AST or null
@@ -229,7 +270,7 @@ int main(int argc, char *argv[])
     parser_t parser = {0};
 
     parser.lexer = &lexer;
-    json_ast_t *json = parse_json(&parser, arena);
+    parse_json(&parser, arena);
 
     return 0;
 }

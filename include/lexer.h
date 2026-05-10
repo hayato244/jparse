@@ -34,7 +34,11 @@ typedef enum {
 typedef struct {
     token_type type;
     json_token json_token;
+
     char *value;
+
+    uint16_t line;
+    uint16_t column;
 } token_t;
 
 typedef struct {

@@ -10,8 +10,8 @@
 
 static bool continue_string(reader_t *reader)
 {
-    char c = reader_peek(reader);
-    char prev_char = reader_peekn(reader, -1);
+    char c = reader_peek(reader).ch;
+    char prev_char = reader_peekn(reader, -1).ch;
 
     if (c == '"')
     {
@@ -23,12 +23,12 @@ static bool continue_string(reader_t *reader)
 
 static bool continue_number(reader_t *reader)
 {
-    return is_numeric(reader_peek(reader));
+    return is_numeric(reader_peek(reader).ch);
 }
 
 static bool continue_keyword(reader_t *reader)
 {
-    return is_alpha(reader_peek(reader));
+    return is_alpha(reader_peek(reader).ch);
 }
 
 static json_token determine_keyword(char *word)
@@ -58,7 +58,7 @@ static void token_value(lexer_t *lexer, token_t *token, bool (*cont)(reader_t *)
 
     while (cont(lexer->reader))
     {
-        char next_char = reader_next(lexer->reader);
+        char next_char = reader_next(lexer->reader).ch;
 
         token->value[read_chars] = next_char;
         read_chars++;
@@ -71,45 +71,31 @@ static void token_value(lexer_t *lexer, token_t *token, bool (*cont)(reader_t *)
 
 static void syntax_token(lexer_t *lexer, token_t *token)
 {
-    char next_char = reader_next(lexer->reader);
+    reader_char_t next_rc = reader_next(lexer->reader);
+
     token->type = SYNTAX_TOKEN;
 
-    switch (next_char)
+    switch (next_rc.ch)
     {
-        case '{':
-            token->json_token = JSON_LEFT_BRACE_TOKEN;
-            break;
-
-        case '}':
-            token->json_token = JSON_RIGHT_BRACE_TOKEN;
-            break;
-
-        case '[':
-            token->json_token = JSON_LEFT_BRACKET_TOKEN;
-            break;
-
-        case ']':
-            token->json_token = JSON_RIGHT_BRACKET_TOKEN;
-            break;
-
-        case ',':
-            token->json_token = JSON_COMMA_TOKEN;
-            break;
-
-        case ':':
-            token->json_token = JSON_COLON_TOKEN;
-            break;
-
-        case '"':
-            token->json_token = JSON_DOUBLE_QUOTE_TOKEN;
-            break;
+        case '{': token->json_token = JSON_LEFT_BRACE_TOKEN; break;
+        case '}': token->json_token = JSON_RIGHT_BRACE_TOKEN; break;
+        case '[': token->json_token = JSON_LEFT_BRACKET_TOKEN; break;
+        case ']': token->json_token = JSON_RIGHT_BRACKET_TOKEN; break;
+        case ',': token->json_token = JSON_COMMA_TOKEN; break;
+        case ':': token->json_token = JSON_COLON_TOKEN; break;
+        case '"': token->json_token = JSON_DOUBLE_QUOTE_TOKEN; break;
     }
 
-    printf("Type: SYNTAX   | %c\n", next_char);
+    printf("Type: syntax  | Line: %3u, Col: %3u | %c\n", next_rc.line, next_rc.column, next_rc.ch);
+
+    token->line = next_rc.line;
+    token->column = next_rc.column;
 }
 
 static void string_token(lexer_t *lexer, token_t *token)
 {
+    reader_char_t peeked_rc = reader_peek(lexer->reader);
+
     reader_next(lexer->reader); // Consume first double quote
 
     token->type = LITERAL_TOKEN;
@@ -119,28 +105,41 @@ static void string_token(lexer_t *lexer, token_t *token)
 
     reader_next(lexer->reader); // Consume second double quote
 
-    printf("Type: LITERAL  | %s\n", token->value);
+    printf("Type: literal | Line: %3u, Col: %3u | %s\n", peeked_rc.line, peeked_rc.column, token->value);
+
+    token->line = peeked_rc.line;
+    token->column = peeked_rc.column;
 }
 
 static void numeric_token(lexer_t *lexer, token_t *token)
 {
+    reader_char_t peeked_rc = reader_peek(lexer->reader);
+
     token->type = LITERAL_TOKEN;
     token->json_token = JSON_NUMBER_TOKEN;
 
     token_value(lexer, token, continue_number);
 
-    printf("Type: LITERAL  | %s\n", token->value);
+    printf("Type: literal | Line: %3u, Col: %3u | %s\n", peeked_rc.line, peeked_rc.column, token->value);
+
+    token->line = peeked_rc.line;
+    token->column = peeked_rc.column;
 }
 
 static void keyword_token(lexer_t *lexer, token_t *token)
 {
+    reader_char_t peeked_rc = reader_peek(lexer->reader);
+
     token->type = KEYWORD_TOKEN;
 
     token_value(lexer, token, continue_keyword);
 
     token->json_token = determine_keyword(token->value);
 
-    printf("Type: KEYWORD  | %s\n", token->value);
+    printf("Type: keyword | Line: %3u, Col: %3u | %s\n", peeked_rc.line, peeked_rc.column, token->value);
+
+    token->line = peeked_rc.line;
+    token->column = peeked_rc.column;
 }
 
 static void eof_token(token_t *token)
@@ -151,7 +150,7 @@ static void eof_token(token_t *token)
 
 static void skip_whitespace(reader_t *reader)
 {
-    while (is_whitespace(reader_peek(reader)))
+    while (is_whitespace(reader_peek(reader).ch))
     {
         reader_next(reader);
     }
@@ -165,7 +164,7 @@ static void fill(lexer_t *lexer)
     {
         skip_whitespace(lexer->reader);
 
-        char peeked_char = reader_peek(lexer->reader);
+        char peeked_char = reader_peek(lexer->reader).ch;
 
         if (is_numeric(peeked_char))
         {
@@ -226,6 +225,8 @@ void lexer_peek(lexer_t *lexer, token_t *token)
     token->value = lexer->token_buffer[lexer->token_buffer_tail].value;
     token->json_token = lexer->token_buffer[lexer->token_buffer_tail].json_token;
     token->type = lexer->token_buffer[lexer->token_buffer_tail].type;
+    token->line = lexer->token_buffer[lexer->token_buffer_tail].line;
+    token->column = lexer->token_buffer[lexer->token_buffer_tail].column;
 }
 
 void lexer_next(lexer_t *lexer, token_t *token)
@@ -238,6 +239,8 @@ void lexer_next(lexer_t *lexer, token_t *token)
     token->value = lexer->token_buffer[lexer->token_buffer_tail].value;
     token->json_token = lexer->token_buffer[lexer->token_buffer_tail].json_token;
     token->type = lexer->token_buffer[lexer->token_buffer_tail].type;
+    token->line = lexer->token_buffer[lexer->token_buffer_tail].line;
+    token->column = lexer->token_buffer[lexer->token_buffer_tail].column;
 
     lexer->token_buffer_tail = (lexer->token_buffer_tail + 1) % TOKEN_BUFFER_SIZE;
     lexer->token_buffer_count--;

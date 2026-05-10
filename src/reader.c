@@ -12,7 +12,12 @@ static void fill(reader_t *reader)
 
     while ((ch = fgetc(reader->fp)))
     {
-        reader->buffer[reader->head] = ch;
+        reader->buffer[reader->head] = (reader_char_t){
+            .ch = ch,
+            .column = reader->column,
+            .line = reader->line,
+        };
+
         reader->head = (reader->head + 1) % READER_BUFFER_SIZE;
         reader->count++;
 
@@ -47,7 +52,7 @@ reader_t reader_init(const char *path)
     return reader;
 }
 
-char reader_peek(reader_t *reader)
+reader_char_t reader_peek(reader_t *reader)
 {
     if (reader->count == 0)
     {
@@ -57,7 +62,7 @@ char reader_peek(reader_t *reader)
     return reader->buffer[reader->tail];
 }
 
-char reader_peekn(reader_t *reader, int32_t n)
+reader_char_t reader_peekn(reader_t *reader, int32_t n)
 {
     assert(n < READER_BUFFER_SIZE);
     assert(n > -2); // Allows looking at the previous character
@@ -73,16 +78,16 @@ char reader_peekn(reader_t *reader, int32_t n)
     return reader->buffer[lookup < 0 ? READER_BUFFER_SIZE - 1 : lookup];
 }
 
-char reader_next(reader_t *reader)
+reader_char_t reader_next(reader_t *reader)
 {
     if (reader->count < READER_BUFFER_SIZE)
     {
         fill(reader);
     }
 
-    char ch = reader->buffer[reader->tail];
+    reader_char_t rc = reader->buffer[reader->tail];
     reader->tail = (reader->tail + 1) % READER_BUFFER_SIZE;
     reader->count--;
 
-    return ch;
+    return rc;
 }
